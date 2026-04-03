@@ -1,0 +1,165 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Guess — Pokémon</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+<body class="page-play">
+
+<header class="top-bar">
+    <a href="{% url 'home' %}" class="btn btn-ghost">Customization</a>
+</header>
+
+<main class="play-main">
+    <h1 class="play-title">Who's That Pokémon?</h1>
+
+    <section class="hints-card" aria-live="polite">
+        <h2 class="hints-heading">Hints</h2>
+        <ul class="hint-list">
+            {% for key, value in hints.items %}
+                <li><span class="hint-key">{{ key }}</span> <span class="hint-val">{{ value }}</span></li>
+            {% endfor %}
+        </ul>
+        <p class="hint-footnote">
+            {% if single_type_mode %}
+                Single-type pool: after 3 wrong guesses you see <strong>level</strong>; after 4, <strong>color</strong> (no type&nbsp;2 hint).
+            {% else %}
+                After 3 wrong guesses you see <strong>type&nbsp;2</strong>; after 4, <strong>color</strong>.
+            {% endif %}
+        </p>
+    </section>
+
+    {% if comparison_error %}
+    <section class="comparison-card comparison-card--error" aria-live="polite">
+        <h2 class="comparison-heading">Name check</h2>
+        <p class="comparison-error-msg">{{ comparison_error }}</p>
+        {% if not first_invalid_only and previous_feedback %}
+        <div class="previous-compare">
+            <h3 class="comparison-subheading">Previous guess (details)</h3>
+            <p class="comparison-sub">Compared using <strong>{{ previous_feedback.guessed_display_name }}</strong> — direction hints point toward the hidden Pokémon.</p>
+            <ul class="comparison-list">
+                {% for row in previous_feedback.rows %}
+                <li class="comparison-row comparison-row--{{ row.verdict }}">
+                    <div class="comparison-top">
+                        <span class="comparison-label">{{ row.label }}</span>
+                        <span class="comparison-yours">Yours: {{ row.guess_display }}</span>
+                    </div>
+                    <p class="comparison-msg">{{ row.message }}</p>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </section>
+    {% elif comparison_rows %}
+    <section class="comparison-card" aria-live="polite">
+        <h2 class="comparison-heading">Your guess vs target</h2>
+        <p class="comparison-sub">Compared using <strong>{{ guessed_display_name }}</strong> — direction hints point toward the hidden Pokémon (not shown).</p>
+        <ul class="comparison-list">
+            {% for row in comparison_rows %}
+            <li class="comparison-row comparison-row--{{ row.verdict }}">
+                <div class="comparison-top">
+                    <span class="comparison-label">{{ row.label }}</span>
+                    <span class="comparison-yours" title="Your guess's value">Yours: {{ row.guess_display }}</span>
+                </div>
+                <p class="comparison-msg">{{ row.message }}</p>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    <form method="post" action="{% url 'play' %}" class="guess-form" id="guess-form">
+        {% csrf_token %}
+        <div class="guess-row">
+            <div class="guess-field-wrap">
+                {{ pokemon_names|json_script:"pokemon-names-json" }}
+                <input class="guess-input" type="text" name="guess" id="guess-input"
+                       placeholder="Enter Pokémon name" autocomplete="off" required
+                       aria-label="Pokémon name" aria-describedby="name-warn name-suggestions-hint">
+                <ul class="name-suggestions" id="name-suggestions" hidden role="listbox" aria-label="Matching names"></ul>
+                <p class="name-warn" id="name-warn" hidden role="alert">This Pokémon is not in the dataset.</p>
+                <p class="sr-only" id="name-suggestions-hint">Names starting with your text appear below while you type.</p>
+            </div>
+            <span class="attempts-pill" aria-live="polite">Guesses left: <strong>{{ attempts_left }}</strong></span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-guess">Guess</button>
+    </form>
+</main>
+
+<script>
+(function () {
+    var dataEl = document.getElementById("pokemon-names-json");
+    var input = document.getElementById("guess-input");
+    var list = document.getElementById("name-suggestions");
+    var warn = document.getElementById("name-warn");
+    if (!dataEl || !input || !list || !warn) return;
+
+    var ALL_NAMES = JSON.parse(dataEl.textContent);
+
+    function prefixMatches(q) {
+        var t = q.trim();
+        if (!t) return [];
+        var tl = t.toLowerCase();
+        return ALL_NAMES.filter(function (n) {
+            return String(n).toLowerCase().startsWith(tl);
+        });
+    }
+
+    function renderSuggestions() {
+        var q = input.value;
+        list.innerHTML = "";
+        if (!q.trim()) {
+            warn.hidden = true;
+            list.hidden = true;
+            return;
+        }
+        var matches = prefixMatches(q);
+        if (matches.length === 0) {
+            warn.hidden = false;
+            list.hidden = true;
+            return;
+        }
+        warn.hidden = true;
+        matches.slice(0, 30).forEach(function (name) {
+            var li = document.createElement("li");
+            li.setAttribute("role", "option");
+            li.textContent = name;
+            li.tabIndex = -1;
+            li.addEventListener("mousedown", function (e) {
+                e.preventDefault();
+                input.value = name;
+                list.hidden = true;
+                warn.hidden = true;
+            });
+            list.appendChild(li);
+        });
+        list.hidden = false;
+    }
+
+    input.addEventListener("input", renderSuggestions);
+    input.addEventListener("focus", renderSuggestions);
+    document.addEventListener("click", function (e) {
+        if (e.target !== input && !list.contains(e.target)) {
+            list.hidden = true;
+        }
+    });
+
+    document.getElementById("guess-form").addEventListener("submit", function () {
+        var q = input.value.trim();
+        if (!q) return;
+        var exact = ALL_NAMES.some(function (n) {
+            return String(n).toLowerCase() === q.toLowerCase();
+        });
+        if (!exact) {
+            warn.hidden = false;
+        }
+    });
+})();
+</script>
+
+</body>
+</html>

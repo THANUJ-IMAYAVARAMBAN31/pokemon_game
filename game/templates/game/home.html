@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Who's That Pokémon?</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+<body class="page-home">
+
+<header class="top-bar">
+    <details class="customization">
+        <summary class="btn btn-ghost">Customization</summary>
+        <div class="customization-panel">
+            <p class="customization-title">Pokémon pool</p>
+            <label class="radio-label">
+                <input type="radio" name="filter" value="all" form="game-start-form" checked>
+                <span>All Pokémon (with or without a second type)</span>
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="filter" value="only_type1" form="game-start-form">
+                <span>Single-type only (no type&nbsp;2)</span>
+            </label>
+        </div>
+    </details>
+</header>
+
+<main class="center-stage">
+    <div class="hero-card">
+        <p class="eyebrow">Gotta guess ’em all</p>
+        <h1 class="hero-title">Who's That Pokémon?</h1>
+        <p class="hero-sub">Five guesses. Hints unlock after wrong answers.</p>
+
+        <form id="game-start-form" method="post" action="{% url 'start' %}" class="start-form">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-start">Start Game</button>
+        </form>
+    </div>
+</main>
+
+</body>
+</html>

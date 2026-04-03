@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Result — Pokémon</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+<body class="page-result">
+
+<header class="top-bar">
+    <a href="{% url 'home' %}" class="btn btn-ghost">Customization</a>
+</header>
+
+<main class="result-main">
+    {% if result == "win" %}
+        <div class="result-banner result-win">
+            <h1 class="result-title">You got it!</h1>
+            <p class="result-msg">Nice work — that was the right Pokémon.</p>
+        </div>
+    {% else %}
+        <div class="result-banner result-lose">
+            <h1 class="result-title">Out of guesses</h1>
+            <p class="result-msg">Here’s the Pokémon you were looking for.</p>
+        </div>
+    {% endif %}
+
+    <article class="pokemon-card">
+        <h2 class="pokemon-name">{{ pokemon.name }}</h2>
+        <dl class="stat-grid">
+            <div><dt>Pokédex No.</dt><dd>{{ pokemon.no }}</dd></div>
+            <div><dt>Level</dt><dd>{{ pokemon.level|default_if_none:"—" }}</dd></div>
+            <div><dt>Type 1</dt><dd>{{ pokemon.type1 }}</dd></div>
+            <div><dt>Type 2</dt><dd>{% if pokemon.type2 %}{{ pokemon.type2 }}{% else %}—{% endif %}</dd></div>
+            <div><dt>Height</dt><dd>{{ pokemon.height }} m</dd></div>
+            <div><dt>Weight</dt><dd>{{ pokemon.weight }} kg</dd></div>
+            <div><dt>Legendary</dt><dd>{% if pokemon.legendary %}Yes{% else %}No{% endif %}</dd></div>
+            <div><dt>Color</dt><dd>{{ pokemon.color }}</dd></div>
+        </dl>
+    </article>
+
+    <a href="{% url 'home' %}" class="btn btn-primary btn-wide">Play again</a>
+</main>
+
+</body>
+</html>
